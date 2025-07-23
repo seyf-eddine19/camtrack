@@ -1,0 +1,249 @@
+{% extends "contracts/base.html" %}
+{% block title %}Warehouse Dashboard{% endblock %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-4">
+  <!-- Header -->
+  <div class="mb-4">
+    <h2 class="fw-bold text-primary"><i class="bi bi-house-door-fill me-2"></i>{{ warehouse.name }}</h2>
+    <p class="text-muted mb-1"><strong>Location:</strong> {{ warehouse.location }}</p>
+    {% if warehouse.contract %}
+    <p class="text-muted"><strong>Linked Contract:</strong> {{ warehouse.contract.name }} ({{ warehouse.contract.contract_number }})</p>
+    {% endif %}
+  </div>
+
+  <!-- Warehouse Stats -->
+  <div class="row g-3 mb-4">
+    <!-- Zones Count -->
+    <div class="col-6 col-md-2">
+      <div class="bg-white shadow-sm border rounded-3 p-3 text-center">
+        <div class="mb-2 text-primary fs-4">
+          <i class="bi bi-grid-3x3-gap-fill"></i>
+        </div>
+        <div class="text-muted small">Total Zones</div>
+        <div class="fw-bold fs-5">{{ warehouse.count_zones }}</div>
+      </div>
+    </div>
+    
+    <!-- Total Devices -->
+    <div class="col-6 col-md-2">
+      <div class="bg-white shadow-sm border rounded-3 p-3 text-center">
+        <div class="mb-2 text-dark fs-4">
+          <i class="bi bi-hdd-stack-fill"></i>
+        </div>
+        <div class="text-muted small">Total Devices</div>
+        <div class="fw-bold fs-5">{{ warehouse.count_devices }}</div>
+      </div>
+    </div>
+  
+    <!-- Devices in Warehouse -->
+    <div class="col-6 col-md-2">
+      <div class="bg-white shadow-sm border rounded-3 p-3 text-center">
+        <div class="mb-2 text-warning fs-4">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="text-muted small">In Warehouse</div>
+        <div class="fw-bold fs-5">{{ warehouse.count_in_warehouse }}</div>
+      </div>
+    </div>
+  
+    <!-- Installed Devices -->
+    <div class="col-6 col-md-2">
+      <div class="bg-white shadow-sm border rounded-3 p-3 text-center">
+        <div class="mb-2 text-success fs-4">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="text-muted small">Installed</div>
+        <div class="fw-bold fs-5">{{ warehouse.count_installed }}</div>
+      </div>
+    </div>
+  
+    <!-- Damaged Devices -->
+    <div class="col-6 col-md-2">
+      <div class="bg-white shadow-sm border rounded-3 p-3 text-center">
+        <div class="mb-2 text-danger fs-4">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="text-muted small">Damaged</div>
+        <div class="fw-bold fs-5">{{ warehouse.count_damaged }}</div>
+      </div>
+    </div>
+    
+    <div class="col-6 col-md-2 d-flex flex-column gap-2">
+      <!-- Export to XLS -->
+      <a href="?export=true&format=excel" class="btn btn-outline-success">
+        <i class="bi bi-file-earmark-excel"></i> Export Excel
+      </a>
+      <!-- Export to PDF -->
+      <a href="?export=true&format=pdf" class="btn btn-outline-danger">
+        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+      </a>
+      <!-- Import XLS -->
+      <a href="{% url 'import_devices' %}" class="btn btn-outline-primary">
+        <i class="bi bi-upload"></i> Import Excel
+      </a>
+
+    </div>
+    
+
+  </div>
+  
+  <!-- Devices Table -->
+  <div class="card bg-white shadow border p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
+      <h4 class="fw-bold text-primary mb-3 mb-md-0">
+        <i class="bi bi-cpu me-1"></i>Devices Stored
+      </h4>
+      <a href="{% url 'device_add' warehouse.pk %} " class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> New Device
+      </a>
+    </div>
+    <!-- Filter Section -->
+    <div class="bg-light rounded p-3 mb-4 border">
+      <form method="get" class="row gx-3 gy-2 align-items-end">
+        
+        <!-- Zone Filter -->
+        <div class="col-12 col-md-6">
+          <label for="zone" class="form-label fw-semibold text-muted">
+            <i class="bi bi-geo-alt-fill me-1"></i>Zone:
+          </label>
+          <select name="zone" id="zone" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">All Zones</option>
+            <option value="warehouse" {% if filter_zone == "warehouse" %}selected{% endif %}>Warehouse</option>
+            {% for zone in zones %}
+              <option value="{{ zone.id }}" {% if filter_zone == zone.id|stringformat:"s" %}selected{% endif %}>
+                {{ zone.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+    
+        <!-- Status Filter Buttons -->
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-semibold text-muted d-block">
+            <i class="bi bi-filter-circle me-1"></i>Status:
+          </label>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="?{% if filter_location == 'warehouse' %}location=warehouse&{% endif %}{% if filter_zone %}zone={{ filter_zone }}&{% endif %}" class="btn btn-sm {% if not filter_status %}btn-dark{% else %}btn-outline-dark{% endif %}">All</a>
+            <a href="?{% if filter_location == 'warehouse' %}location=warehouse&{% endif %}{% if filter_zone %}zone={{ filter_zone }}&{% endif %}status=available" class="btn btn-sm {% if filter_status == 'available' %}btn-primary{% else %}btn-outline-primary{% endif %}">Available</a>
+            <a href="?{% if filter_location == 'warehouse' %}location=warehouse&{% endif %}{% if filter_zone %}zone={{ filter_zone }}&{% endif %}status=installed" class="btn btn-sm {% if filter_status == 'installed' %}btn-success{% else %}btn-outline-success{% endif %}">Installed</a>
+            <a href="?{% if filter_location == 'warehouse' %}location=warehouse&{% endif %}{% if filter_zone %}zone={{ filter_zone }}&{% endif %}status=damaged" class="btn btn-sm {% if filter_status == 'damaged' %}btn-danger{% else %}btn-outline-danger{% endif %}">Damaged</a>
+          </div>
+        </div>
+        <div class="col-12 mt-4">
+          <label class="form-label fw-semibold text-muted d-block">
+            <i class="bi bi-search me-1"></i>Search:
+          </label>
+          <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search by device name" class="form-control" />
+            <button type="submit" class="btn btn-primary">Search</button>
+          </div>
+        </div>
+        
+        <!-- Location Toggle (Checkbox)
+        <div class="col-12 col-md-4">
+          <div class="form-check form-switch mt-4">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="warehouseOnly"
+              name="location"
+              value="warehouse"
+              onchange="this.form.submit()"
+              {% if filter_location == 'warehouse' %}checked{% endif %}
+            >
+            <label class="form-check-label text-muted fw-semibold" for="warehouseOnly">
+              <i class="bi bi-box-seam me-1"></i> Show only devices in Warehouse
+            </label>
+          </div>
+        </div> -->
+      </form>
+    </div>    
+    
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Serial</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>IP</th>
+            <th>Transfer Date</th>
+            <th>Installation</th>
+            <th>Responsible</th>
+            <th>Maintenance Count</th>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for device in devices %}
+          <tr data-href="{% url 'device_detail' device.serial_number %}">
+            <td>{{ forloop.counter }}</td>
+            <td>{{ device.serial_number }}</td>
+            <td>{{ device.name }}</td>
+            <td>{{ device.device_category.name }}</td>
+            {% if device.status == 'available' %}
+            <td class="text-primary">Available</td>
+            {% elif device.status == 'installed' %}
+            <td class="text-success">Installed</td>
+            {% elif device.status == 'damaged' %}
+            <td class="text-danger">Damaged</td>
+            {% endif %}
+            <td>{{ device.ip_address|default:"—" }}</td>
+            <td>{{ device.transfer_date|date:"Y-m-d" }}</td>
+            <td>{{ device.installation_date|date:"Y-m-d" }}</td>
+            <td>{{ device.responsible_person }}</td>
+            <td>{{ device.count_maintenance_cards }}</td>
+            <td>
+              <form method="post" action="{% url 'device_update_status' device.pk %}">
+                {% csrf_token %}
+                  {% if device.status != 'available' %}
+                  <button name="status" value="available" class="btn btn-sm my-1 btn-primary">
+                    <i class="bi bi-check-circle me-2"></i>Available
+                  </button>
+                  {% endif %}
+                  {% if device.status != 'installed' %}
+                  <button name="status" value="installed" class="btn btn-sm my-1 btn-success">
+                    <i class="bi bi-box-arrow-in-down me-2"></i>Installed
+                  </button>
+                  {% endif %}
+                  {% if device.status != 'damaged' %}
+                  <button name="status" value="damaged" class="btn btn-sm my-1 btn-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Damaged
+                  </button>
+                  {% endif %}
+              </form>
+            </td>
+            <td>
+              <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'device_detail' device.serial_number %}" class="btn btn-sm btn-icon btn-view" title="View">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'device_edit' device.serial_number %}" class="btn btn-sm btn-icon btn-edit" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-center text-muted">No devices available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Back Button -->
+  <div class="text-end mt-4">
+    <a href="{% url 'warehouse_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left-circle"></i> Back to Warehouses
+    </a>
+  </div>
+</div>
+{% endblock %}
