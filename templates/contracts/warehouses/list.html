@@ -1,0 +1,67 @@
+{% extends "contracts/base.html" %}
+{% load static %}
+
+{% block title %}Warehouses List{% endblock %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-4">
+  <div class="bg-white shadow p-3 p-md-4 border border-light-subtle">
+
+    <!-- Page Title -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
+      <h4 class="fw-bold text-primary mb-3 mb-md-0">
+        <i class="bi bi-box-seam me-1"></i> Warehouses List
+      </h4>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table align-middle text-center">
+        <thead class="table-light small text-uppercase">
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Location</th>
+            <th>Contract</th>
+            <th>Zones</th>
+            <th>Total Devices</th>
+            <th>In Warehouse</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for warehouse in warehouses %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ warehouse.name }}</td>
+            <td class="text-start">{{ warehouse.location }}</td>
+            <td>{{ warehouse.contract.name }}</td>
+            <td>{{ warehouse.count_zones }}</td>
+            <td>{{ warehouse.count_devices }}</td>
+            <td>{{ warehouse.count_in_warehouse }}</td>
+            <td>
+              <div class="d-flex gap-2 flex-wrap justify-content-center">
+                <a href="{% url 'warehouse_detail' warehouse.id %}" class="btn btn-sm btn-icon btn-view" title="View">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'contract_edit' warehouse.contract.pk %}" class="btn btn-sm btn-icon btn-edit" title="Edit Contract">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-muted">No warehouses available.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
