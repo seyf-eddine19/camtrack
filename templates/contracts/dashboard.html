@@ -1,0 +1,100 @@
+{% extends "contracts/base.html" %}
+{% block title %}Site Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h3 class="fw-bold text-primary mb-4"><i class="bi bi-speedometer2 me-1"></i> Site Dashboard</h3>
+
+  <!-- Summary Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm border-start border-4 border-primary">
+        <div class="card-body">
+          <h6 class="text-muted">Contracts</h6>
+          <h3 class="fw-bold text-primary">{{ total_contracts }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-start border-4 border-secondary">
+        <div class="card-body">
+          <h6 class="text-muted">Devices</h6>
+          <h3 class="fw-bold text-secondary">{{ total_devices }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-start border-4 border-warning">
+        <div class="card-body">
+          <h6 class="text-muted">Tasks</h6>
+          <h3 class="fw-bold text-warning">{{ total_tasks }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm border-start border-4 border-danger">
+        <div class="card-body">
+          <h6 class="text-muted">Late Tasks</h6>
+          <h3 class="fw-bold text-danger">{{ late_tasks }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-start border-4 border-info">
+        <div class="card-body">
+          <h6 class="text-muted">Maintenance Cards</h6>
+          <h3 class="fw-bold text-info">{{ maintenance_count }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-start border-4 border-success">
+        <div class="card-body">
+          <h6 class="text-muted">Coordination Requests</h6>
+          <h3 class="fw-bold text-success">{{ coordination_count }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest Items -->
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-file-earmark-text me-1"></i> Latest Contracts
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for contract in latest_contracts %}
+          <li class="list-group-item d-flex justify-content-between">
+            {{ contract.name }}
+            <small class="text-muted">{{ contract.start_date }}</small>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">No contracts available.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark">
+          <i class="bi bi-list-task me-1"></i> Latest Tasks
+        </div>
+        <ul class="list-group list-group-flush">
+          {% for task in latest_tasks %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ task.name }} <small class="text-muted">({{ task.get_status_display }})</small></span>
+            <small>{{ task.deadline }}</small>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">No tasks found.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
