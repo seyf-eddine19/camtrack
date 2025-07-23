@@ -1,0 +1,36 @@
+<!-- Toggle button visible only on mobile -->
+<button class="btn btn-primary d-lg-none m-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+    <i class="bi bi-list"></i>
+  </button>
+  
+  <!-- Sidebar for large screens -->
+  <aside class="sidebar d-none d-lg-block">
+    <nav class="nav flex-column">
+      <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a class="nav-link" href="{% url 'contract_list' %}">
+        <i class="bi bi-file-earmark-text"></i> Contracts
+      </a>
+      <!-- Add more links as needed -->
+    </nav>
+  </aside>
+  
+  <!-- Offcanvas sidebar for mobile -->
+  <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="mobileSidebar">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">CamTrack</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <nav class="nav flex-column">
+        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard' %}">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a class="nav-link" href="{% url 'contract_list' %}">
+          <i class="bi bi-file-earmark-text"></i> Contracts
+        </a>
+      </nav>
+    </div>
+  </div>
+  
