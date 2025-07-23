@@ -1,0 +1,140 @@
+{% extends "contracts/base.html" %}
+{% block title %}Contract Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-4">
+  <!-- Header -->
+  <div class="mb-4">
+    <h2 class="fw-bold text-primary">
+      <i class="bi bi-file-earmark-text me-2"></i>{{ contract.name }}
+    </h2>
+    <p class="text-muted">Contract Number: <strong>{{ contract.contract_number }}</strong></p>
+  </div>
+
+  <!-- Contract Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm p-3">
+        <div class="d-flex align-items-center">
+          <div class="me-3"><i class="bi bi-calendar-check fs-4 text-success"></i></div>
+          <div>
+            <small class="text-muted">Start Date</small>
+            <div><strong>{{ contract.start_date }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm p-3">
+        <div class="d-flex align-items-center">
+          <div class="me-3"><i class="bi bi-calendar-x fs-4 text-danger"></i></div>
+          <div>
+            <small class="text-muted">End Date</small>
+            <div><strong>{{ contract.end_date }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm p-3">
+        <div class="d-flex align-items-center">
+          <div class="me-3"><i class="bi bi-box-seam fs-4 text-info"></i></div>
+          <div>
+            <small class="text-muted">Warehouse</small>
+            <div><strong>{{ contract.warehouse.name }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm p-3">
+        <div class="d-flex align-items-center">
+          <div class="me-3"><i class="bi bi-geo-alt fs-4 text-warning"></i></div>
+          <div>
+            <small class="text-muted">Zone Count</small>
+            <div><strong>{{ zones|length }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <div class="card shadow-sm border p-3 mb-4">
+    <h5 class="mb-3"><i class="bi bi-list-ul me-2"></i>Contract Items</h5>
+    <table class="table table-bordered">
+      <thead class="table-light">
+        <tr>
+          <th>Category</th>
+          <th>Quantity</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.category.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.notes|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center text-muted">No items available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Related Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card p-3 border-0 shadow-sm">
+        <h6 class="text-primary">Tasks</h6>
+        <p>Total: {{ tasks|length }}</p>
+        <p>Completed: {{ task_summary.completed }}</p>
+        <p>Ongoing: {{ task_summary.ongoing }}</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card p-3 border-0 shadow-sm">
+        <h6 class="text-danger">Maintenance</h6>
+        <p>Total: {{ maintenance_cards|length }}</p>
+        <p>Repaired: {{ maintenance_summary.repaired }}</p>
+        <p>Pending: {{ maintenance_summary.pending }}</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card p-3 border-0 shadow-sm">
+        <h6 class="text-info">Coordination Requests</h6>
+        <p>Total: {{ coordination_requests|length }}</p>
+        <p>Last Request: {{ coordination_summary.last_date }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zones Table -->
+  <div class="card p-3 shadow-sm border mb-4">
+    <h5 class="mb-3"><i class="bi bi-diagram-3 me-2"></i>Zones</h5>
+    <table class="table table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>Name</th>
+          <th>Device Count</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for zone in zones %}
+        <tr>
+          <td>{{ zone.name }}</td>
+          <td>{{ zone.devices.count }}</td>
+          <td>{{ zone.notes|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center text-muted">No zones defined.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}
