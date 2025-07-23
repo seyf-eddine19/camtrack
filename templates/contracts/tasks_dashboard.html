@@ -1,0 +1,109 @@
+{% extends "contracts/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <h3 class="fw-bold text-primary mb-3"><i class="bi bi-kanban"></i> Tasks Dashboard</h3>
+
+  <!-- Filters -->
+  <form method="get" class="row gx-3 gy-2 bg-white border p-3 rounded shadow-sm mb-4">
+    <div class="col-md-4">
+      <label class="form-label text-muted fw-semibold">Contract</label>
+      <select name="contract" class="form-select form-select-sm" onchange="this.form.submit()">
+        {% for contract in contracts %}
+          <option value="{{ contract.contract_number }}" {% if filter_contract == contract.contract_number %}selected{% endif %}>{{ contract.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label text-muted fw-semibold">Zone</label>
+      <select name="zone" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Zones</option>
+        {% for zone in zones %}
+          <option value="{{ zone.id }}" {% if filter_zone == zone.id|stringformat:"s" %}selected{% endif %}>{{ zone.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label text-muted fw-semibold">Status</label>
+      <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        {% for key, label in tasks.model.TASK_STATUS_CHOICES %}
+          <option value="{{ key }}" {% if filter_status == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-12 mt-3">
+      <label class="form-label fw-semibold text-muted">Special Filters:</label>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="?contract={{ filter_contract }}&filter=late_only" class="btn btn-sm {% if filter_type == 'late_only' %}btn-danger{% else %}btn-outline-danger{% endif %}">Late Tasks</a>
+        <a href="?contract={{ filter_contract }}&filter=completed_after_deadline" class="btn btn-sm {% if filter_type == 'completed_after_deadline' %}btn-warning{% else %}btn-outline-warning{% endif %}">Completed After Deadline</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+      </div>
+    </div>
+  </form>
+
+  <!-- Stats -->
+  <div class="row text-center mb-4">
+    <div class="col-md-4">
+      <div class="bg-light p-3 rounded shadow-sm">
+        <h5 class="fw-bold text-primary">{{ total_tasks }}</h5>
+        <p class="mb-0 text-muted">Total Tasks</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="bg-light p-3 rounded shadow-sm">
+        <h5 class="fw-bold text-danger">{{ late_tasks }}</h5>
+        <p class="mb-0 text-muted">Late Tasks</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="bg-light p-3 rounded shadow-sm">
+        <h5 class="fw-bold text-warning">{{ completed_late }}</h5>
+        <p class="mb-0 text-muted">Completed Late</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks List -->
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for task in tasks %}
+      <div class="col">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h5 class="card-title text-primary">{{ task.name }}</h5>
+            <p><i class="bi bi-geo-alt-fill"></i> {{ task.zone.name }}</p>
+            <p><i class="bi bi-calendar-check"></i> Deadline: {{ task.deadline|date:"Y-m-d" }}</p>
+
+            <p><strong>Progress:</strong>
+              {% if task.remaining_days > 0 %}
+                <span class="text-success">{{ task.remaining_days }} days remaining</span>
+              {% elif task.delay_days > 0 %}
+                <span class="text-danger">{{ task.delay_days }} days late</span>
+              {% else %}
+                <span class="text-muted">On time</span>
+              {% endif %}
+            </p>
+
+            <span class="badge
+              {% if task.status == 'completed' %}bg-success
+              {% elif task.status == 'delayed' %}bg-danger
+              {% elif task.status == 'ongoing' %}bg-warning text-dark
+              {% else %}bg-secondary{% endif %}">
+              {{ task.get_status_display }}
+            </span>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col">
+        <div class="alert alert-warning text-center">No tasks found.</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
