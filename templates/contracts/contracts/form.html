@@ -1,0 +1,251 @@
+{% extends "contracts/base.html" %}
+{% load static %}
+
+{% block title %}{{ object|yesno:"Edit Contract,Create Contract" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="bg-white shadow p-3 p-md-4 border border-light-subtle">
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2 border-bottom pb-3 mb-4">
+      <h4 class="fw-bold text-primary m-0 d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-plus"></i> {% if object %}Edit{% else %}Create{% endif %} Contract
+      </h4>
+    </div>
+
+    <div class="bg-light-subtle px-2 px-md-4 py-3 py-md-4 rounded-3">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Contract Info -->
+        <div class="border-start border-4 border-primary ps-3 mb-5">
+          <h6 class="text-dark fw-bold mb-3"><i class="bi bi-journal-text text-primary me-2"></i>Contract Information</h6>
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-muted" for="{{ form.contract_number.id_for_label }}">{{ form.contract_number.label }}</label>
+              {{ form.contract_number }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-muted" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+              {{ form.name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-muted" for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
+              {{ form.start_date }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-muted" for="{{ form.end_date.id_for_label }}">{{ form.end_date.label }}</label>
+              {{ form.end_date }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold text-muted" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+              {{ form.notes }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Contract Items -->
+        <div class="mb-5">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h6 class="text-dark fw-bold"><i class="bi bi-box-seam text-primary me-1"></i>Contract Items</h6>
+            <button type="button" id="add-item" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-plus-circle"></i> Add Item
+            </button>
+          </div>
+
+          {{ item_formset.management_form }}
+          <div class="table-responsive-sm">
+            <table class="table align-middle overflow-hidden" id="item-table">
+              <thead class="table-light text-secondary small text-uppercase">
+                <tr>
+                  <th class="bg-light">Category</th>
+                  <th class="bg-light">Quantity</th>
+                  <th class="bg-light">Notes</th>
+                  <th class="bg-light text-center">Remove</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for form in item_formset %}
+                <tr class="item-row">
+                  <td class="p-2">{{ form.id }}{{ form.category }}</td>
+                  <td class="p-2">{{ form.quantity }}</td>
+                  <td class="p-2">{{ form.notes }}</td>
+                  <td class="text-center">
+                    {% if form.instance.pk %}
+                      {{ form.DELETE }}
+                    {% else %}
+                      <button type="button" class="remove-row btn btn-sm btn-outline-danger rounded-circle" title="Remove">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Zones -->
+        <div class="mb-5">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h6 class="text-dark fw-bold"><i class="bi bi-geo-alt text-primary me-1"></i>Zones</h6>
+            <button type="button" id="add-zone" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-plus-circle"></i> Add Zone
+            </button>
+          </div>
+          {{ zone_formset.management_form }}
+          <div class="table-responsive-sm">
+            <table class="table align-middle overflow-hidden" id="zone-table">
+              <thead class="table-light text-center small text-uppercase">
+                <tr>
+                  <th class="bg-light">Name</th>
+                  <th class="bg-light">Notes</th>
+                  <th class="bg-light">Remove</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for form in zone_formset %}
+                <tr class="zone-row">
+                  <td class="p-2">{{ form.id }}{{ form.name }}</td>
+                  <td class="p-2">{{ form.notes }}</td>
+                  <td class="text-center">
+                    {% if form.instance.pk %}
+                      {{ form.DELETE }}
+                    {% else %}
+                      <button type="button" class="remove-row btn btn-sm btn-outline-danger rounded-circle" title="Remove">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Warehouse -->
+        <div class="mb-5">
+          <h6 class="text-dark fw-bold"><i class="bi bi-building text-primary me-1"></i>Warehouse</h6>
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-muted" for="{{ warehouse_form.name.id_for_label }}">{{ warehouse_form.name.label }}</label>
+              {{ warehouse_form.name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-muted" for="{{ warehouse_form.location.id_for_label }}">{{ warehouse_form.location.label }}</label>
+              {{ warehouse_form.location }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-4 d-flex justify-content-between">
+          <a href="{% url 'contract_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left-circle"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Save
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  function updateFormsetCount(prefix) {
+    const totalForms = document.querySelector(`input[name="${prefix}-TOTAL_FORMS"]`);
+    if (totalForms) {
+      const rows = document.querySelectorAll(`#${prefix}-table tbody tr`);
+      totalForms.value = rows.length;
+    }
+  }
+
+  function addRow(tableId, rowClass, prefix) {
+    const tableBody = document.querySelector(`#${tableId} tbody`);
+    const totalForms = document.querySelector(`input[name="${prefix}-TOTAL_FORMS"]`);
+    if (!tableBody || !totalForms) return;
+
+    const index = parseInt(totalForms.value);
+    const newRow = document.createElement("tr");
+    newRow.classList.add(rowClass);
+
+    if (rowClass === "item-row") {
+      const categoryOptions = document.querySelector(`#id_${prefix}-0-category`)?.innerHTML || "";
+
+      newRow.innerHTML = `
+        <td>
+          <select name="${prefix}-${index}-category" class="form-select select2" required>
+            ${categoryOptions}
+          </select>
+        </td>
+        <td>
+          <input type="number" name="${prefix}-${index}-quantity" class="form-control" required />
+        </td>
+        <td>
+          <textarea name="${prefix}-${index}-notes" class="form-control" rows="2"></textarea>
+        </td>
+        <td class="text-center">
+          <button type="button" class="remove-row btn btn-sm btn-outline-danger rounded-circle" title="Remove">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      `;
+    } else if (rowClass === "zone-row") {
+      newRow.innerHTML = `
+        <td>
+          <input type="text" name="${prefix}-${index}-name" class="form-control" required />
+        </td>
+        <td>
+          <textarea name="${prefix}-${index}-notes" class="form-control" rows="2"></textarea>
+        </td>
+        <td class="text-center">
+          <button type="button" class="remove-row btn btn-sm btn-outline-danger rounded-circle" title="Remove">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      `;
+    }
+
+    tableBody.appendChild(newRow);
+    totalForms.value = index + 1;
+
+    // Re-initialize Select2 for new elements
+    $(newRow).find('.select2').select2();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    $('.select2').select2();
+
+    // Add item row
+    document.getElementById("add-item")?.addEventListener("click", function () {
+      addRow("item-table", "item-row", "items");
+    });
+
+    // Add zone row
+    document.getElementById("add-zone")?.addEventListener("click", function () {
+      addRow("zone-table", "zone-row", "zones");
+    });
+
+    // Remove any row
+    document.addEventListener("click", function (e) {
+      const removeBtn = e.target.closest(".remove-row");
+      if (removeBtn) {
+        const row = removeBtn.closest("tr");
+        const table = row.closest("table");
+        const prefix = table.id.replace("-table", "");
+        row.remove();
+        updateFormsetCount(prefix);
+      }
+    });
+  });
+</script>
+{% endblock %}
