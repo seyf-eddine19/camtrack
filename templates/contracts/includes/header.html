@@ -1,0 +1,21 @@
+<header class="navbar navbar-light bg-white shadow-sm px-3 sticky-top">
+    <div class="container-fluid justify-content-end">
+      <!-- Dark mode toggle -->
+      <button class="btn btn-outline-secondary me-2" id="themeToggleBtn" title="Toggle Dark Mode">
+        <i class="bi bi-moon"></i>
+      </button>
+  
+      <!-- User dropdown -->
+      <div class="dropdown">
+        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-person-circle fs-4"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+          <li><a class="dropdown-item" href="{% url 'index' %}">Profile</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'index' %}">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+</header>
+  
