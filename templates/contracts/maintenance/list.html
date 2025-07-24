@@ -1,15 +1,19 @@
 {% extends "contracts/base.html" %}
-{% block title %}Maintenance Cards{% endblock %}
+<!-- Maintenance Cards -->
+{% block title %}بطاقات الصيانة{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-3 px-md-4 py-4">
-  <!-- Filter Form -->
-  <div class="bg-white shadow p-3 p-md-4 border border-light-subtle">
-    <form method="get" class="row gx-3 gy-2 align-items-end">
+<div class="container-fluid px-3 px-md-4 py-4" dir="rtl" lang="ar">
 
-      <!-- Contract Filter -->
+  <!-- نموذج التصفية -->
+  <div class="bg-white shadow p-3 p-md-4 border border-light-subtle">
+    <form method="get" class="row gx-3 gy-3 align-items-end">
+
+      <!-- تصفية العقد -->
       <div class="col-md-6">
-        <label class="form-label fw-semibold text-muted"><i class="bi bi-file-earmark-text me-1"></i>Contract:</label>
+        <label class="form-label fw-semibold text-muted">
+          <i class="bi bi-file-earmark-text me-1"></i> العقد:
+        </label>
         <select name="contract" class="form-select form-select-sm" onchange="this.form.submit()">
           {% for contract in contracts %}
             <option value="{{ contract.pk }}" {% if filter_contract == contract.pk|stringformat:"s" %}selected{% endif %}>
@@ -19,12 +23,14 @@
         </select>
       </div>
 
-      <!-- Zone Filter -->
+      <!-- تصفية المنطقة -->
       <div class="col-md-6">
-        <label class="form-label fw-semibold text-muted"><i class="bi bi-geo-alt-fill me-1"></i>Zone:</label>
-        <select name="zone" id="zone" class="form-select form-select-sm" onchange="this.form.submit()">
-          <option value="">All Zones</option>
-          <option value="warehouse" {% if filter_zone == "warehouse" %}selected{% endif %}>Warehouse</option>
+        <label class="form-label fw-semibold text-muted">
+          <i class="bi bi-geo-alt-fill me-1"></i> المنطقة:
+        </label>
+        <select name="zone" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">كل المناطق</option>
+          <option value="warehouse" {% if filter_zone == "warehouse" %}selected{% endif %}>المخزن</option>
           {% for zone in zones %}
             <option value="{{ zone.id }}" {% if filter_zone == zone.id|stringformat:"s" %}selected{% endif %}>
               {{ zone.name }}
@@ -33,11 +39,13 @@
         </select>
       </div>
 
-      <!-- Category Filter -->
+      <!-- تصفية الفئة -->
       <div class="col-md-6">
-        <label class="form-label fw-semibold text-muted"><i class="bi bi-layers me-1"></i>Category:</label>
+        <label class="form-label fw-semibold text-muted">
+          <i class="bi bi-layers me-1"></i> الفئة:
+        </label>
         <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
-          <option value="">All Categories</option>
+          <option value="">كل الفئات</option>
           {% for category in categories %}
             <option value="{{ category.pk }}" {% if filter_category == category.pk|stringformat:"s" %}selected{% endif %}>
               {{ category.name }}
@@ -46,42 +54,52 @@
         </select>
       </div>
 
-      <!-- Status Filter -->
+      <!-- تصفية الحالة -->
       <div class="col-md-6">
-        <label class="form-label fw-semibold text-muted d-block"><i class="bi bi-filter-circle me-1"></i>Status:</label>
+        <label class="form-label fw-semibold text-muted d-block">
+          <i class="bi bi-filter-circle me-1"></i> الحالة:
+        </label>
         <div class="d-flex flex-wrap gap-2">
-          <a href="?contract={{ filter_contract }}{% if filter_zone %}&zone={{ filter_zone }}{% endif %}" class="btn btn-sm {% if not filter_status %}btn-dark{% else %}btn-outline-dark{% endif %}">All</a>
-          <a href="?contract={{ filter_contract }}{% if filter_zone %}&zone={{ filter_zone }}{% endif %}&status=available" class="btn btn-sm {% if filter_status == 'available' %}btn-primary{% else %}btn-outline-primary{% endif %}">Available</a>
-          <a href="?contract={{ filter_contract }}{% if filter_zone %}&zone={{ filter_zone }}{% endif %}&status=installed" class="btn btn-sm {% if filter_status == 'installed' %}btn-success{% else %}btn-outline-success{% endif %}">Installed</a>
-          <a href="?contract={{ filter_contract }}{% if filter_zone %}&zone={{ filter_zone }}{% endif %}&status=damaged" class="btn btn-sm {% if filter_status == 'damaged' %}btn-danger{% else %}btn-outline-danger{% endif %}">Damaged</a>
+          <a href="?contract={{ filter_contract }}{% if filter_zone %}&zone={{ filter_zone }}{% endif %}" class="btn btn-sm {% if not filter_status %}btn-dark{% else %}btn-outline-dark{% endif %}">الكل</a>
+          <a href="?contract={{ filter_contract }}{% if filter_zone %}&zone={{ filter_zone }}{% endif %}&status=available" class="btn btn-sm {% if filter_status == 'available' %}btn-primary{% else %}btn-outline-primary{% endif %}">متاح</a>
+          <a href="?contract={{ filter_contract }}{% if filter_zone %}&zone={{ filter_zone }}{% endif %}&status=installed" class="btn btn-sm {% if filter_status == 'installed' %}btn-success{% else %}btn-outline-success{% endif %}">مركب</a>
+          <a href="?contract={{ filter_contract }}{% if filter_zone %}&zone={{ filter_zone }}{% endif %}&status=damaged" class="btn btn-sm {% if filter_status == 'damaged' %}btn-danger{% else %}btn-outline-danger{% endif %}">معطل</a>
         </div>
       </div>
 
     </form>
   </div>
 
+  <!-- جدول البطاقات -->
   <div class="bg-white shadow p-3 p-md-4 mt-4 border border-light-subtle">
-    <!-- Page Title -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
       <h4 class="fw-bold text-primary mb-3 mb-md-0">
-        <i class="bi bi-tools me-1"></i> Maintenance Cards
+        <i class="bi bi-tools me-1"></i> بطاقات الصيانة
       </h4>
+
+      <div class="d-flex gap-2">
+        <a href="?contract={{ filter_contract }}&zone={{ filter_zone }}&category={{ filter_category }}&status={{ filter_status }}&export=1&format=excel" class="btn btn-outline-success">
+          <i class="bi bi-file-earmark-excel"></i> تصدير Excel
+        </a>
+        <a href="?contract={{ filter_contract }}&zone={{ filter_zone }}&category={{ filter_category }}&status={{ filter_status }}&export=1&format=pdf" class="btn btn-outline-danger">
+          <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
+        </a>
+      </div>
     </div>
 
-     <!-- Maintenance Table -->
     <div class="table-responsive">
       <table class="table align-middle text-center">
         <thead class="table-light small text-uppercase">
           <tr>
             <th>#</th>
-            <th>Device</th>
-            <th>Contract</th>
-            <th>Status</th>
-            <th>Reported</th>
-            <th>Issue Type</th>
-            <th>Repaired</th>
-            <th>Technician</th>
-            <th></th>
+            <th>الجهاز</th>
+            <th>العقد</th>
+            <th>الحالة</th>
+            <th>تاريخ الإبلاغ</th>
+            <th>نوع العطل</th>
+            <th>تاريخ الإصلاح</th>
+            <th>الفني</th>
+            <th>إجراءات</th>
           </tr>
         </thead>
         <tbody>
@@ -89,37 +107,41 @@
           <tr>
             <td>{{ forloop.counter }}</td>
             <td>{{ card.device.name }} ({{ card.device.serial_number }})</td>
-            <td>{{ card.device.zone.contract.pk }}</td>
+            <td>{{ card.device.zone.contract.name }}</td>
             <td>
               {% if card.device.status == 'available' %}
-                <span class="text-primary">Available</span>
+                <span class="badge bg-primary">متاح</span>
               {% elif card.device.status == 'installed' %}
-                <span class="text-success">Installed</span>
+                <span class="badge bg-success">مثبّت</span>
               {% elif card.device.status == 'damaged' %}
-                <span class="text-danger">Damaged</span>
+                <span class="badge bg-danger">معطوب</span>
+              {% else %}
+                <span class="badge bg-secondary">غير معروف</span>
               {% endif %}
             </td>
-            <td>{{ card.report_date|date:"Y-m-d" }}</td>
+            <td>{{ card.report_date|date:"d/m/Y" }}</td>
             <td>{{ card.issue_type }}</td>
-            <td>{{ card.repair_date|date:"Y-m-d" }}</td>
+            <td>{{ card.repair_date|date:"d/m/Y" }}</td>
             <td>{{ card.technician }}</td>
             <td>
               {% if card.device.serial_number %}
-              <div class="d-flex gap-2 flex-wrap">
-                <a href="{% url 'device_detail' card.device.serial_number %}" class="btn btn-sm btn-icon btn-view me-3" title="View">
+              <div class="d-flex gap-2 flex-wrap justify-content-center">
+                <a href="{% url 'device_detail' card.device.serial_number %}" class="btn btn-sm" title="عرض">
                   <i class="bi bi-eye"></i>
                 </a>
-                <a href="{% url 'maintenance_add' card.device.serial_number %}" class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-plus-circle"></i> New
+                <a href="{% url 'maintenance_add' card.device.serial_number %}" class="btn btn-sm" title="إضافة صيانة">
+                  <i class="bi bi-plus-circle"></i>
                 </a>
               </div>
               {% else %}
-                <span class="text-muted">N/A</span>
+                <span class="text-muted">غير متوفر</span>
               {% endif %}
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="9" class="text-muted text-center">No maintenance records available.</td></tr>
+          <tr>
+            <td colspan="9" class="text-muted text-center">لا توجد بطاقات صيانة.</td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
