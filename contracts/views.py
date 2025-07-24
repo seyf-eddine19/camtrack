@@ -40,6 +40,7 @@ from .models import (
 ) 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LogoutView as DjangoLogoutView
+from svglib.svglib import svg2rlg
 
 
 # Export Excels & PDFs
@@ -240,6 +241,181 @@ class ExportMixin:
 
         # Use `prepare_export_response` for consistent file handling
         return self.prepare_export_response(pdf_content, "pdf", model_name)
+
+class ExportMixin:
+    def get(self, request, *args, **kwargs):
+        if "export" in request.GET:
+            export_format = request.GET.get("format", "excel")
+            queryset = self.get_queryset()
+
+            if not queryset.exists():
+                return HttpResponse("لا توجد بيانات للتصدير", content_type="text/plain")
+
+            if export_format == "pdf":
+                return self.export_to_pdf(queryset)
+            else:
+                return self.export_to_excel(queryset)
+
+        return super().get(request, *args, **kwargs)
+
+    def prepare_export_response(self, content, file_type, model_name):
+        timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+        safe_model_name = slugify(model_name) or "export"
+        filename = f"export_{safe_model_name}_{timestamp}.{file_type}"
+
+        content_types = {
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "pdf": "application/pdf",
+        }
+
+        response = HttpResponse(content, content_type=content_types.get(file_type, "application/octet-stream"))
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    def export_to_excel(self, queryset):
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = f"{queryset.model._meta.verbose_name_plural}"
+
+        fields = [field.name for field in queryset.model._meta.fields[1:]]
+        headers = [field.verbose_name for field in queryset.model._meta.fields[1:]]
+
+        # Header style
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = openpyxl.styles.PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        for col_num, header in enumerate(headers, 1):
+            cell = sheet.cell(row=1, column=col_num, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            sheet.column_dimensions[get_column_letter(col_num)].width = max(15, len(header) + 2)
+
+        for obj in queryset:
+            row = []
+            for field in fields:
+                value = getattr(obj, field, "")
+                if hasattr(value, "get_FOO_display"):
+                    value = value.get_FOO_display()
+                elif hasattr(value, "__str__"):
+                    value = str(value)
+                row.append(value)
+            sheet.append(row)
+
+        # Apply border to all cells
+        border = Border(left=Side(style="thin"), right=Side(style="thin"),
+                        top=Side(style="thin"), bottom=Side(style="thin"))
+
+        for row in sheet.iter_rows(min_row=1, max_row=sheet.max_row,
+                                   min_col=1, max_col=sheet.max_column):
+            for cell in row:
+                cell.border = border
+
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        return self.prepare_export_response(output.read(), "xlsx", queryset.model._meta.model_name)
+
+    def export_to_pdf(self, queryset):
+        model_name = queryset.model._meta.model_name
+        buffer = BytesIO()
+
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(A4),
+            rightMargin=10,
+            leftMargin=10,
+            topMargin=4,
+            bottomMargin=20
+        )
+
+        font_path = os.path.join(settings.STATIC_ROOT, "contracts/fonts/Janna LT Bold/Janna LT Bold.ttf")
+        pdfmetrics.registerFont(TTFont("Janna", font_path))
+
+        elements = []
+
+        # ✅ إضافة صورة SVG
+        svg_path = os.path.join(settings.STATIC_ROOT, "contracts/img/logo-1.svg")
+
+        drawing = svg2rlg(svg_path)
+        drawing.scale(1, 1)  # التحكم بالحجم
+        drawing.hAlign = "LEFT"
+
+        # إعداد العنوان
+        title_text = get_display(arabic_reshaper.reshape(f"تقرير {queryset.model._meta.verbose_name_plural}"))
+        title_style = ParagraphStyle(name="Title", fontName="Janna", fontSize=20, alignment=1, spaceAfter=0)
+        title_paragraph = Paragraph(title_text, title_style)
+
+        # إنشاء جدول مكون من عمودين: [الصورة, العنوان]
+        title_table = Table(
+            data=[[drawing, title_paragraph]],
+            colWidths=[80, 650],  # يمكنك تعديل العرض حسب حجم الصورة والعنوان
+            hAlign='RIGHT'
+        )
+        title_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (0, 0), "RIGHT"),  # الصورة
+            ("ALIGN", (1, 0), (1, 0), "RIGHT"),  # العنوان
+        ]))
+
+        elements.append(title_table)
+        elements.append(Spacer(1, 25))
+
+        # ✅ جدول البيانات
+        fields = [[field.name, field.verbose_name] for field in queryset.model._meta.fields[-1:0:-1]]
+        headers = [get_display(arabic_reshaper.reshape(field[1])) for field in fields]
+        table_data = [headers]
+        max_col_lengths = [len(h) for h in headers]
+
+        for obj in queryset:
+            row = []
+            for i, field in enumerate(fields):
+                value = getattr(obj, field[0], "")
+                if hasattr(obj, f"get_{field[0]}_display"):
+                    value = getattr(obj, f"get_{field[0]}_display")()
+                elif isinstance(value, (datetime, date)):
+                    value = value.strftime("%Y-%m-%d")
+                elif isinstance(value, bool):
+                    value = "نعم" if value else "لا"
+                else:
+                    value = str(value)
+
+                if any("\u0600" <= c <= "\u06FF" for c in value):
+                    value = get_display(arabic_reshaper.reshape(value))
+
+                max_col_lengths[i] = max(max_col_lengths[i], len(value))
+                row.append(value)
+            table_data.append(row)
+
+        # ✅ تحديد عرض الأعمدة تلقائيًا
+        total_width = 780
+        min_width = 55
+        max_width = 220 
+        col_widths = []
+        sum_lengths = sum(max_col_lengths) or 1 
+        col_widths = [
+          max(min_width, min((length / sum_lengths) * total_width, max_width)) 
+          for length in max_col_lengths
+        ]
+
+        table = Table(table_data, colWidths=col_widths, repeatRows=1)
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+            ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+            ("FONTNAME", (0, 0), (-1, -1), "Janna"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ]))
+
+        elements.append(table)
+        elements.append(Spacer(1, 16))
+
+        doc.build(elements)
+        return self.prepare_export_response(buffer.getvalue(), "pdf", model_name)
 
 
 class ProfileView(LoginRequiredMixin, TemplateView):
@@ -689,7 +865,36 @@ class WarehouseDetailView(DetailView):
 
         content = []
 
-        title_text = f"تقرير أجهزة المستودع: {warehouse.name} - {warehouse.location}"
+        # ✅ إضافة صورة SVG
+        svg_path = os.path.join(settings.STATIC_ROOT, "contracts/img/logo-1.svg")
+
+        drawing = svg2rlg(svg_path)
+        drawing.scale(1, 1)  # التحكم بالحجم
+        drawing.hAlign = "LEFT"
+
+        # إعداد العنوان
+        contract_info = f"تقرير أجهزة العقد  : {warehouse.contract.name} - {warehouse.contract.contract_number}"
+        title_text = get_display(arabic_reshaper.reshape(contract_info))
+        title_style = ParagraphStyle(name="Title", fontName="Janna", fontSize=20, alignment=1, spaceAfter=0)
+        title_paragraph = Paragraph(title_text, title_style)
+
+        # إنشاء جدول مكون من عمودين: [الصورة, العنوان]
+        title_table = Table(
+            data=[[drawing, title_paragraph]],
+            colWidths=[80, 650],  # يمكنك تعديل العرض حسب حجم الصورة والعنوان
+            hAlign='RIGHT'
+        )
+        title_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (0, 0), "RIGHT"),  # الصورة
+            ("ALIGN", (1, 0), (1, 0), "RIGHT"),  # العنوان
+        ]))
+
+        content.append(title_table)
+        content.append(Spacer(1, 25))
+
+        
+        title_text = f""
         if any("\u0600" <= c <= "\u06FF" for c in title_text):
             title_text = get_display(arabic_reshaper.reshape(title_text))
 
@@ -697,44 +902,66 @@ class WarehouseDetailView(DetailView):
         content.append(title)
         content.append(Spacer(1, 10))
 
-        if warehouse.contract:
-            contract_info = f"العقد المرتبط: {warehouse.contract.name} - {warehouse.contract.contract_number}"
-            contract_info = get_display(arabic_reshaper.reshape(contract_info))
-            content.append(Paragraph(contract_info, ParagraphStyle("info", fontName="Janna", fontSize=12, alignment=2)))
-            content.append(Spacer(1, 10))
-
-        # ====== Statistics as Text (Not Table) ======
-        stats_paragraphs = [
+        # إنشاء الفقرات
+        stats = [
+            f"عدد الأجهزة في المخزن: {warehouse.count_in_warehouse}",
+            f"المخزن: {warehouse.name} - {warehouse.location}",
             f"إجمالي المناطق: {warehouse.count_zones}",
             f"إجمالي الأجهزة: {warehouse.count_devices}",
-            f"عدد الأجهزة في المخزن: {warehouse.count_in_warehouse}",
             f"عدد الأجهزة المركبة: {warehouse.count_installed}",
             f"عدد الأجهزة المعطلة: {warehouse.count_damaged}",
         ]
-        content.append(Spacer(1, 20))
-        for stat in stats_paragraphs:
-            reshaped = get_display(arabic_reshaper.reshape(stat))
-            paragraph = Paragraph(reshaped, ParagraphStyle("stat_text", fontName="Janna", fontSize=11, alignment=2, spaceAfter=4))
-            content.append(paragraph)
+        
+        # إعادة تشكيل كل عنصر بالعربية وإضافته في صف واحد
+        reshaped_stats = [
+            Paragraph(get_display(arabic_reshaper.reshape(s)), ParagraphStyle("stat_text", fontName="Janna", fontSize=11, alignment=2))
+            for s in stats
+        ]
+        
+        # تقسيمها إلى صفوف حسب عدد الأعمدة (مثلاً 3 أعمدة)
+        row_size = 2
+        stat_rows = [reshaped_stats[i:i+row_size] for i in range(0, len(reshaped_stats), row_size)]
+        
+        # إنشاء الجدول
+        stats_table = Table(stat_rows, colWidths=[380] * row_size, hAlign='RIGHT')
+        stats_table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+            ("FONTNAME", (0, 0), (-1, -1), "Janna"),
+            ("FONTSIZE", (0, 0), (-1, -1), 11),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        
+        content.append(stats_table)
         content.append(Spacer(1, 20))
 
+        
         headers = [
-            "الرقم التسلسلي", "الاسم", "الفئة", "الحالة", "IP",
-            "تاريخ النقل", "تاريخ التركيب", "المسؤول", "ملاحظات"
+            "ملاحظات",
+            "المنطقة",
+            "تاريخ التركيب",
+            "تاريخ النقل",
+            "المسؤول",
+            "IP",
+            "الحالة",
+            "الفئة",
+            "الاسم",
+            "الرقم التسلسلي"
         ]
         data = [[get_display(arabic_reshaper.reshape(h)) for h in headers]]
 
         for device in queryset:
             row = [
-                device.serial_number,
-                device.name,
-                device.device_category.name if device.device_category else "",
-                dict(Device.DEVICE_STATUS_CHOICES).get(device.status, ""),
-                device.ip_address or "",
-                device.transfer_date.strftime("%Y-%m-%d") if device.transfer_date else "",
-                device.installation_date.strftime("%Y-%m-%d") if device.installation_date else "",
+                device.notes or "",
+                device.zone.name if device.zone else "المخزن",
                 device.responsible_person or "",
-                device.notes or ""
+                device.installation_date.strftime("%Y-%m-%d") if device.installation_date else "",
+                device.transfer_date.strftime("%Y-%m-%d") if device.transfer_date else "",
+                device.ip_address or "",
+                dict(Device.DEVICE_STATUS_CHOICES).get(device.status, ""),
+                device.device_category.name if device.device_category else "",
+                device.name,
+                device.serial_number
             ]
             row = [get_display(arabic_reshaper.reshape(str(col))) if any('\u0600' <= c <= '\u06FF' for c in str(col)) else str(col) for col in row]
             data.append(row)
@@ -939,45 +1166,106 @@ def update_device_status(request, pk):
     return HttpResponseBadRequest("Invalid status")
 
 
-class MaintenanceListView(TemplateView):
+class MaintenanceListView(ExportMixin, TemplateView):
     template_name = 'contracts/maintenance/list.html'
+
+    def get_queryset(self):
+        contracts = Contract.objects.all()
+        last_contract = contracts.last()
+
+        contract_id = self.request.GET.get('contract') or (last_contract.pk if last_contract else None)
+        zone_id = self.request.GET.get('zone')
+        category_id = self.request.GET.get('category')
+        status = self.request.GET.get('status')
+
+        queryset = MaintenanceCard.objects.filter(device__zone__contract_id=contract_id)
+
+        if zone_id:
+            if zone_id == "warehouse":
+                queryset = queryset.filter(device__current_location="warehouse")
+            else:
+                queryset = queryset.filter(device__zone_id=zone_id)
+
+        if category_id:
+            queryset = queryset.filter(device__device_category_id=category_id)
+
+        if status:
+            queryset = queryset.filter(device__status=status)
+
+        return queryset, contract_id, zone_id, category_id, status, contracts
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        contracts = Contract.objects.all()
-        last_contract = contracts.last()
-
-        contract_id = self.request.GET.get('contract')
-        zone_id = self.request.GET.get('zone')
-        category_id = self.request.GET.get('category')
-        filter_status = self.request.GET.get('status')
-
-        if not contract_id:
-            contract_id = last_contract.pk if last_contract else None
-
-        maintenance_cards = MaintenanceCard.objects.filter(device__zone__contract_id=contract_id)
-
-        if zone_id == "warehouse":
-            maintenance_cards = maintenance_cards.filter(device__current_location="warehouse")
-            context['filter_zone'] = zone_id
-        elif zone_id:
-            maintenance_cards = maintenance_cards.filter(device__zone_id=zone_id)
-            context['filter_zone'] = zone_id
-
-        if category_id:
-            maintenance_cards = maintenance_cards.filter(device__device_category_id=category_id)
-        if filter_status:
-            maintenance_cards = maintenance_cards.filter(device__status=filter_status)
+        maintenance_cards, contract_id, zone_id, category_id, status, contracts = self.get_queryset()
 
         context.update({
             'contracts': contracts,
             'zones': Zone.objects.filter(contract_id=contract_id),
             'categories': DeviceCategory.objects.all(),
             'maintenance_cards': maintenance_cards,
-            'filter_contract': str(contract_id),
-            'filter_status': filter_status,
+            'filter_contract': str(contract_id) if contract_id else '',
+            'filter_zone': zone_id,
             'filter_category': category_id,
+            'filter_status': status,
+        })
+        return context
+
+class MaintenanceListView(ExportMixin, TemplateView):
+    template_name = 'contracts/maintenance/list.html'
+
+    def get_queryset(self):
+        contract_number = self.request.GET.get('contract')
+        contract = None
+
+        if contract_number:
+            contract = Contract.objects.filter(contract_number=contract_number).first()
+        else:
+            contract = Contract.objects.last()
+
+        if not contract:
+            return MaintenanceCard.objects.none()
+
+        queryset = MaintenanceCard.objects.filter(device__zone__contract=contract)
+
+        zone_id = self.request.GET.get('zone')
+        if zone_id == "warehouse":
+            queryset = queryset.filter(device__current_location="warehouse")
+        elif zone_id:
+            queryset = queryset.filter(device__zone_id=zone_id)
+
+        category_id = self.request.GET.get('category')
+        if category_id:
+            queryset = queryset.filter(device__device_category_id=category_id)
+
+        status = self.request.GET.get('status')
+        if status and status.lower() != "none":
+            queryset = queryset.filter(device__status=status)
+
+        return queryset
+
+    def get_filter_context(self):
+        return {
+            "filter_contract": self.request.GET.get('contract'),
+            "filter_zone": self.request.GET.get('zone'),
+            "filter_category": self.request.GET.get('category'),
+            "filter_status": self.request.GET.get('status'),
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        filter_context = self.get_filter_context()
+
+        contract = Contract.objects.filter(contract_number=filter_context["filter_contract"]).first()
+        if not contract:
+            contract = Contract.objects.last()
+
+        context.update(filter_context)
+        context.update({
+            'contracts': Contract.objects.all(),
+            'zones': Zone.objects.filter(contract=contract) if contract else Zone.objects.none(),
+            'categories': DeviceCategory.objects.all(),
+            'maintenance_cards': self.get_queryset(),
         })
         return context
 
@@ -1049,16 +1337,18 @@ class MaintenanceDeleteView(DeleteView):
         return reverse_lazy('maintenancecard_list', kwargs={'contract_id': self.kwargs['contract_id']})
 
 
-class CoordinationListView(ListView):
+class CoordinationListView(ExportMixin, ListView):
     model = CoordinationRequest
     template_name = 'contracts/coordination/list.html'
-    context_object_name = 'requests'
+    context_object_name = 'coordination'
+    paginate_by = 25  # يمكن تعديل العدد حسب الحاجة
 
     def get_queryset(self):
         queryset = CoordinationRequest.objects.all()
         contract_id = self.request.GET.get('contract')
         zone_id = self.request.GET.get('zone')
 
+        # فلترة حسب العقد
         if contract_id:
             queryset = queryset.filter(zone__contract_id=contract_id)
         else:
@@ -1066,26 +1356,29 @@ class CoordinationListView(ListView):
             if last_contract:
                 queryset = queryset.filter(zone__contract=last_contract)
 
-        if zone_id:
-            queryset = queryset.filter(zone_id=zone_id)
+        # فلترة حسب المنطقة
+        if zone_id and zone_id.isdigit():
+            queryset = queryset.filter(zone_id=int(zone_id))
 
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         contract_id = self.request.GET.get('contract')
-        context['contracts'] = Contract.objects.all()
+        zone_id = self.request.GET.get('zone')
 
-        # عرض العقد الحالي أو الأخير
+        # تمرير العقود لجميعها
+        context['contracts'] = Contract.objects.all()
+        
+        # تمرير المناطق حسب العقد المحدد
         if contract_id:
-            context['filter_contract'] = str(contract_id)
             context['zones'] = Zone.objects.filter(contract_id=contract_id)
         else:
-            last_contract = Contract.objects.last()
-            context['filter_contract'] = last_contract.pk if last_contract else None
-            context['zones'] = Zone.objects.filter(contract=last_contract) if last_contract else []
+            context['zones'] = Zone.objects.none()
 
-        context['filter_zone'] = self.request.GET.get('zone')
+        context['filter_contract'] = contract_id
+        context['filter_zone'] = zone_id if zone_id and zone_id.isdigit() else ''
+
         return context
 
 
