@@ -148,15 +148,19 @@ class Device(models.Model):
 
 # 7. Maintenance Cards Table
 class MaintenanceCard(models.Model):
-    device = models.ForeignKey('Device', to_field='serial_number', on_delete=models.CASCADE, related_name='maintenance_cards')
-    report_date = models.DateField(blank=True, null=True)
-    issue_type = models.TextField()
-    repair_date = models.DateField(blank=True, null=True)
-    technician = models.CharField(max_length=255)
-    notes = models.TextField(blank=True, null=True)
+    device = models.ForeignKey('Device', to_field='serial_number', on_delete=models.CASCADE, related_name='maintenance_cards', verbose_name='الجهاز')
+    report_date = models.DateField(blank=True, null=True, verbose_name='تاريخ البلاغ')
+    issue_type = models.TextField(verbose_name='نوع المشكلة')
+    repair_date = models.DateField(blank=True, null=True, verbose_name='تاريخ الإصلاح')
+    technician = models.CharField(max_length=255, verbose_name='الفني المسؤول')
+    notes = models.TextField(blank=True, null=True, verbose_name='ملاحظات')
 
     def __str__(self):
-        return f"Maintenance for {self.device.serial_number}"
+        return f"الصيانة للجهاز {self.device.serial_number}"
+
+    class Meta:
+        verbose_name = 'بطاقة صيانة'
+        verbose_name_plural = 'بطاقات الصيانة'
 
 
 # 8. Tasks (Timeline) Table
@@ -197,17 +201,21 @@ class Task(models.Model):
 
 # 9. Coordination Requests Table
 class CoordinationRequest(models.Model):
-    zone = models.ForeignKey('Zone', on_delete=models.CASCADE, related_name='coordination_requests')
-    request_date = models.DateField(blank=True, null=True)
-    target_department = models.CharField(max_length=255)
-    work_type = models.CharField(max_length=255)
-    location = models.CharField(max_length=255)
-    work_details = models.TextField()
-    expected_execution_date = models.DateField(blank=True, null=True)
-    responsible_person = models.CharField(max_length=255)
-    phone_number = models.CharField(max_length=20)
-    email_sent_date = models.DateField(blank=True, null=True)
-    notes = models.TextField(blank=True, null=True)
+    zone = models.ForeignKey('Zone', on_delete=models.CASCADE, related_name='coordination_requests', verbose_name='المنطقة')
+    request_date = models.DateField(blank=True, null=True, verbose_name='تاريخ الطلب')
+    target_department = models.CharField(max_length=255, verbose_name='الجهة المستهدفة')
+    work_type = models.CharField(max_length=255, verbose_name='نوع العمل')
+    location = models.CharField(max_length=255, verbose_name='الموقع')
+    work_details = models.TextField(verbose_name='تفاصيل العمل')
+    expected_execution_date = models.DateField(blank=True, null=True, verbose_name='تاريخ التنفيذ المتوقع')
+    responsible_person = models.CharField(max_length=255, verbose_name='الشخص المسؤول')
+    phone_number = models.CharField(max_length=20, verbose_name='رقم الهاتف')
+    email_sent_date = models.DateField(blank=True, null=True, verbose_name='تاريخ إرسال البريد')
+    notes = models.TextField(blank=True, null=True, verbose_name='ملاحظات')
+
+    class Meta:
+        verbose_name = 'طلب تنسيق'
+        verbose_name_plural = 'طلبات التنسيق'
 
     def __str__(self):
         return f"Coordination for {self.zone.name} - {self.work_type}"
