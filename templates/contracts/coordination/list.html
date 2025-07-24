@@ -1,17 +1,18 @@
 {% extends "contracts/base.html" %}
-{% block title %}Coordination Requests{% endblock %}
+
+{% block title %}طلبات التنسيق{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-3 px-md-4 py-4">
+<div class="container-fluid px-3 px-md-4 py-4" dir="rtl" lang="ar">
 
-  <!-- Filter Form -->
+  <!-- نموذج الفلترة -->
   <div class="bg-white shadow p-3 p-md-4 border border-light-subtle">
     <form method="get" class="row gx-3 gy-2 align-items-end">
 
-      <!-- Contract Filter -->
+      <!-- فلترة العقود -->
       <div class="col-md-6">
         <label class="form-label fw-semibold text-muted">
-          <i class="bi bi-file-earmark-text me-1"></i>Contract:
+          <i class="bi bi-file-earmark-text me-1"></i>العقد:
         </label>
         <select name="contract" class="form-select form-select-sm" onchange="this.form.submit()">
           {% for contract in contracts %}
@@ -22,13 +23,13 @@
         </select>
       </div>
 
-      <!-- Zone Filter -->
+      <!-- فلترة المناطق -->
       <div class="col-md-6">
         <label class="form-label fw-semibold text-muted">
-          <i class="bi bi-geo-alt-fill me-1"></i>Zone:
+          <i class="bi bi-geo-alt-fill me-1"></i>المنطقة:
         </label>
         <select name="zone" class="form-select form-select-sm" onchange="this.form.submit()">
-          <option value="">All Zones</option>
+          <option value="">جميع المناطق</option>
           {% for zone in zones %}
             <option value="{{ zone.id }}" {% if filter_zone == zone.id|stringformat:"s" %}selected{% endif %}>
               {{ zone.name }}
@@ -39,34 +40,46 @@
     </form>
   </div>
 
-  <!-- Coordination Table -->
+  <!-- جدول طلبات التنسيق -->
   <div class="bg-white shadow p-3 p-md-4 mt-4 border border-light-subtle">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
       <h4 class="fw-bold text-primary mb-3 mb-md-0">
-        <i class="bi bi-link-45deg me-1"></i> Coordination Requests
+        <i class="bi bi-link-45deg me-1"></i> طلبات التنسيق
       </h4>
-      <a href="{% url 'coordination_add' %}" class="btn btn-success">
-        <i class="bi bi-plus-circle me-1"></i> New Request
-      </a>
+      <div class="d-flex flex-md-row gap-3">
+        <!-- تصدير إكسل -->
+        <a href="?contract={{ filter_contract }}&zone={{ filter_zone }}&export=1&format=excel" class="btn btn-outline-success">
+          <i class="bi bi-file-earmark-excel"></i> تصدير Excel
+        </a>
+        <!-- تصدير PDF -->
+        <a href="?contract={{ filter_contract }}&zone={{ filter_zone }}&export=1&format=pdf" class="btn btn-outline-danger">
+          <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
+        </a>
+        <!-- إضافة طلب جديد -->
+        <a href="{% url 'coordination_add' %}" class="btn btn-success">
+          <i class="bi bi-plus-circle me-1"></i> طلب جديد
+        </a>
+      </div>
     </div>
 
+    <!-- جدول البيانات -->
     <div class="table-responsive">
       <table class="table align-middle text-center">
         <thead class="table-light small text-uppercase">
           <tr>
             <th>#</th>
-            <th>Zone</th>
-            <th>Department</th>
-            <th>Work Type</th>
-            <th>Request Date</th>
-            <th>Execution Date</th>
-            <th>Responsible</th>
-            <th>Phone</th>
-            <th></th>
+            <th>المنطقة</th>
+            <th>الجهة المستهدفة</th>
+            <th>نوع العمل</th>
+            <th>تاريخ الطلب</th>
+            <th>تاريخ التنفيذ المتوقع</th>
+            <th>المسؤول</th>
+            <th>الهاتف</th>
+            <th>الخيارات</th>
           </tr>
         </thead>
         <tbody>
-          {% for request in requests %}
+          {% for request in coordination %}
           <tr>
             <td>{{ forloop.counter }}</td>
             <td>{{ request.zone.name }}</td>
@@ -78,10 +91,10 @@
             <td>{{ request.phone_number }}</td>
             <td>
               <div class="d-flex gap-2 flex-wrap justify-content-center">
-                <a href="{% url 'coordination_edit' request.pk %}" class="btn btn-sm btn-icon btn-edit" title="Edit">
+                <a href="{% url 'coordination_edit' request.pk %}" class="btn btn-sm btn-icon btn-edit" title="تعديل">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="{% url 'coordination_delete' request.pk %}" class="btn btn-sm btn-icon btn-delete" title="Delete">
+                <a href="{% url 'coordination_delete' request.pk %}" class="btn btn-sm btn-icon btn-delete" title="حذف">
                   <i class="bi bi-trash"></i>
                 </a>
               </div>
@@ -89,7 +102,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="9" class="text-muted text-center">No coordination requests found.</td>
+            <td colspan="9" class="text-muted text-center">لا توجد طلبات تنسيق حالياً.</td>
           </tr>
           {% endfor %}
         </tbody>
