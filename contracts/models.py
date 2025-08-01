@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
+from datetime import date
 from django.db.models import Count
-
 
 # 1. Contracts Table
 class Contract(models.Model):
@@ -30,8 +30,11 @@ class Contract(models.Model):
     def __str__(self):
         return f"{self.contract_number} - {self.name}"
 
+    class Meta:
+        ordering = ['-start_date']
 
-# 2. Devices Table
+
+# 2. Devices Category Table
 class DeviceCategory(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
@@ -39,7 +42,7 @@ class DeviceCategory(models.Model):
         return self.name
 
 
-# 3. Contracts Item Table
+# 3. Contracts Items Table
 class ContractItem(models.Model):
     contract = models.ForeignKey('Contract', to_field='contract_number', on_delete=models.CASCADE, related_name='items')
     category = models.ForeignKey('DeviceCategory', on_delete=models.PROTECT, related_name='contract_items')
@@ -55,11 +58,7 @@ class Warehouse(models.Model):
     name = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
     contract = models.OneToOneField('Contract', to_field='contract_number', on_delete=models.CASCADE, related_name='warehouse')
-
-    @property
-    def count_in_warehouse(self):
-        return self.devices.filter(current_location='warehouse').count()
-    
+   
     @property
     def count_zones(self):
         return self.contract.zones.count()
@@ -76,6 +75,14 @@ class Warehouse(models.Model):
     def count_installed(self):
         return self.devices.filter(status='installed').count()
 
+    @property
+    def count_available(self):
+        return self.devices.filter(status='available').count()
+
+    @property
+    def count_in_warehouse(self):
+        return self.devices.filter(current_location='warehouse').count()
+ 
     @property
     def count_in_zones(self):
         return self.devices.filter(current_location='zone').count()
@@ -100,6 +107,19 @@ class Zone(models.Model):
 
 
 # 6. Devices Table
+class DeviceProperty(models.Model):
+    device = models.ForeignKey('Device', on_delete=models.CASCADE, related_name='properties')
+    key = models.CharField(max_length=100)  # مثل "mac_address", "serial_number", "firmware"
+    value = models.CharField(max_length=255)  # قيمة الخاصية
+    is_required = models.BooleanField(default=False)  # إذا أردت التحكم في هل هي مطلوبة أم لا
+
+    class Meta:
+        unique_together = ('device', 'key')
+
+    def __str__(self):
+        return f"{self.device.serial_number} - {self.key}: {self.value}"
+
+
 class Device(models.Model):
     DEVICE_STATUS_CHOICES = [
         ('installed', 'Installed'),
@@ -112,17 +132,14 @@ class Device(models.Model):
         ('zone', 'Zone'),
     ]
 
-    serial_number = models.CharField(max_length=100, primary_key=True)
+    serial_number = models.CharField(max_length=100, null=True, blank=True, unique=True)
     name = models.CharField(max_length=255)
     invoice_number = models.CharField(max_length=100)
     device_category = models.ForeignKey('DeviceCategory', on_delete=models.PROTECT, related_name='devices')
     warehouse = models.ForeignKey('Warehouse', on_delete=models.PROTECT, related_name='devices')  # ✅ ربط الجهاز بالمخزن
-
     current_location = models.CharField(max_length=20, choices=DEVICE_LOCATION_CHOICES)
     zone = models.ForeignKey('Zone', on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
-
     status = models.CharField(max_length=20, choices=DEVICE_STATUS_CHOICES)
-
     ip_address = models.GenericIPAddressField(blank=True, null=True)
     responsible_person = models.CharField(max_length=255)
     transfer_date = models.DateField(blank=True, null=True)
@@ -132,13 +149,9 @@ class Device(models.Model):
     @property
     def count_maintenance_cards(self):
         return self.maintenance_cards.count()
-        
-    def save(self, *args, **kwargs):
-        if self.zone is not None:
-            self.current_location = 'zone'
-        else:
-            self.current_location = 'warehouse'
 
+    def save(self, *args, **kwargs):
+        self.current_location = 'zone' if self.zone else 'warehouse'
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -148,19 +161,28 @@ class Device(models.Model):
 
 # 7. Maintenance Cards Table
 class MaintenanceCard(models.Model):
-    device = models.ForeignKey('Device', to_field='serial_number', on_delete=models.CASCADE, related_name='maintenance_cards', verbose_name='الجهاز')
+    device = models.ForeignKey('Device', on_delete=models.CASCADE, related_name='maintenance_cards', verbose_name='الجهاز')
     report_date = models.DateField(blank=True, null=True, verbose_name='تاريخ البلاغ')
     issue_type = models.TextField(verbose_name='نوع المشكلة')
     repair_date = models.DateField(blank=True, null=True, verbose_name='تاريخ الإصلاح')
     technician = models.CharField(max_length=255, verbose_name='الفني المسؤول')
     notes = models.TextField(blank=True, null=True, verbose_name='ملاحظات')
-
-    def __str__(self):
-        return f"الصيانة للجهاز {self.device.serial_number}"
-
+    
     class Meta:
         verbose_name = 'بطاقة صيانة'
         verbose_name_plural = 'بطاقات الصيانة'
+
+    def save(self, *args, **kwargs):
+        if self.repair_date:
+            self.device.status = 'installed'
+        else:
+            self.device.status = 'damaged'
+        self.device.save()
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"الصيانة للجهاز {self.device.serial_number}"
 
 
 # 8. Tasks (Timeline) Table
@@ -174,7 +196,7 @@ class Task(models.Model):
 
     name = models.CharField(max_length=255)
     zone = models.ForeignKey('Zone', on_delete=models.CASCADE, related_name='tasks')
-    deadline = models.DateField()
+    deadline = models.DateField(default=date.today)
     actual_delivery_date = models.DateField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=TASK_STATUS_CHOICES)
     notes = models.TextField(blank=True, null=True)
@@ -184,7 +206,6 @@ class Task(models.Model):
         """حساب عدد الأيام المتبقية أو التأخير (بالموجب أو السالب)."""
         if not self.deadline:
             return 0
-    
         reference_date = self.actual_delivery_date or timezone.now().date()
         return (self.deadline - reference_date).days
     
