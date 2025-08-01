@@ -1,0 +1,22 @@
+# Django and dependencies
+Django>=3.2,<4.0
+django-select2>=7.7  # لاستعمال Select2Widget
+
+# Excel export
+openpyxl>=3.1
+
+# PDF export and Arabic support
+reportlab>=3.6
+arabic-reshaper>=3.0
+python-bidi>=0.4.2
+svglib>=1.5.1
+
+# Optional: pandas (لتحليلات إضافية)
+pandas>=2.0
+
+# PostgreSQL أو MySQL حسب قاعدة البيانات لديك (احذف السطر المناسب إذا لا تستعمله)
+# psycopg2-binary>=2.9  # إذا كنت تستخدم PostgreSQL
+# mysqlclient>=2.1      # إذا كنت تستخدم MySQL
+
+# Pillow (مطلوب من Django لمعالجة الصور)
+Pillow>=10.0
