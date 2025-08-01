@@ -24,15 +24,6 @@
   <div class="overlay" id="sidebarOverlay"></div>
   <aside class="sidebar" id="sidebar">
     <nav>
-      <div class="p-2">
-      <img src="{% static 'contracts/img/logo.svg' %}" alt="" height="180" width="180" style="
-      max-height: 100px;
-      width: 100px;
-      margin: auto;
-      background: white;
-      border-radius: 50%;">
-      </div>
-
       <a href="{% url 'dashboard' %}" class="{% if request.path == '/' %}active{% endif %}">
         <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
       </a>
@@ -41,13 +32,9 @@
       </a>
       <a href="{% url 'manage_device_categories' %}" class="{% if 'device-categories' in request.path %}active{% endif %}"><i class="bi bi-box-seam me-1"></i> <span>Device Categories</span></a>
       <a href="{% url 'warehouse_list' %}" class="{% if 'warehouses' in request.path %}active{% endif %}"><i class="bi bi-building"></i> <span>Warehouses</span></a>
-      <!-- <a href="#"><i class="bi bi-geo-alt-fill"></i> <span>Zones</span></a>
-      <a href="#"><i class="bi bi-hdd-network"></i> <span>Devices</span></a>
-      <a href="#"><i class="bi bi-arrow-left-right"></i> <span>Movements</span></a> -->
       <a href="{% url 'task_list' %}" class="{% if 'tasks' in request.path %}active{% endif %}"><i class="bi bi-list-task"></i> <span>Tasks</span></a>
       <a href="{% url 'maintenance_list' %}" class="{% if 'maintenance' in request.path %}active{% endif %}"><i class="bi bi-tools"></i> <span>Maintenance</span></a>
       <a href="{% url 'coordination_list' %}" class="{% if 'coordination' in request.path %}active{% endif %}"><i class="bi bi-people-fill"></i> <span>Coordination</span></a>
-      <!-- <a href="{% url 'warehouse_list' %}" class="{% if 'reports' in request.path %}active{% endif %}"><i class="bi bi-bar-chart-line"></i> <span>Reports</span></a> -->
     </nav>
   </aside>
 
@@ -73,9 +60,14 @@
         <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
           <i class="bi bi-person-circle fs-5"></i>
         </a>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
-          <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+        <ul class="dropdown-menu dropdown-menu-end px-2 ">
+          <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
+          <li>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger w-100 mt-2">Logout <i class="bi bi-box-arrow-right ms-2"></i></button>
+            </form>
+          </li>
         </ul>
       </div>
     </div>
