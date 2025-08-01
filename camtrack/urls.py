@@ -20,3 +20,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('contracts.urls')),
 ]
+
+handler403 = 'contracts.views.custom_403'
+handler404 = 'contracts.views.custom_404'
+handler500 = 'contracts.views.custom_500'
