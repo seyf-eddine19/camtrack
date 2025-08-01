@@ -1,97 +1,144 @@
-
 {% extends "contracts/base.html" %}
-{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Device{% endblock %}
+{% load static %}
+
+{% block title %}{{ form.instance.pk|yesno:"Edit Device,Add Device" }}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-  <div class="bg-white shadow-sm p-4 rounded border">
+  <div class="bg-white shadow p-3 p-md-4 border border-light-subtle">
+
+    <!-- Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2 border-bottom pb-3 mb-4">
-      <h3 class="fw-bold text-primary">
-      <i class="bi bi-cpu me-2"></i> {% if form.instance.pk %}Edit{% else %}Add{% endif %} Device</h3>
+      <h4 class="fw-bold text-primary m-0 d-flex align-items-center gap-2">
+        <i class="bi bi-cpu"></i> {% if form.instance.pk %}Edit{% else %}Add{% endif %} Device
+      </h4>
     </div>
-    <div class="card-form">
-      <form method="post">
-        {% csrf_token %}
-        {{ form.non_field_errors }}
 
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Serial Number</label>
-            {{ form.serial_number }}
-            {{ form.serial_number.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Device Name</label>
-            {{ form.name }}
-            {{ form.name.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Invoice Number</label>
-            {{ form.invoice_number }}
-            {{ form.invoice_number.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Category</label>
-            {{ form.device_category }}
-            {{ form.device_category.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Warehouse</label>
-            {{ form.warehouse }}
-            {{ form.warehouse.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Current Location</label>
-            {{ form.current_location }}
-            {{ form.current_location.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Zone</label>
-            {{ form.zone }}
-            {{ form.zone.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Status</label>
-            {{ form.status }}
-            {{ form.status.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">IP Address</label>
-            {{ form.ip_address }}
-            {{ form.ip_address.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Responsible Person</label>
-            {{ form.responsible_person }}
-            {{ form.responsible_person.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Transfer Date</label>
-            {{ form.transfer_date }}
-            {{ form.transfer_date.errors }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Installation Date</label>
-            {{ form.installation_date }}
-            {{ form.installation_date.errors }}
-          </div>
-          <div class="col-12">
-            <label class="form-label">Notes</label>
-            {{ form.notes }}
-            {{ form.notes.errors }}
-          </div>
-        </div>
+    <!-- Form -->
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="row g-4">
+        <div class="col-md-6">{{ form.serial_number.label_tag }} {{ form.serial_number }} {{ form.serial_number.errors }}</div>
+        <div class="col-md-6">{{ form.name.label_tag }} {{ form.name }} {{ form.name.errors }}</div>
+        <div class="col-md-6">{{ form.invoice_number.label_tag }} {{ form.invoice_number }} {{ form.invoice_number.errors }}</div>
+        <div class="col-md-6">{{ form.device_category.label_tag }} {{ form.device_category }} {{ form.device_category.errors }}</div>
+        <div class="col-md-6">{{ form.zone.label_tag }} {{ form.zone }} {{ form.zone.errors }}</div>
+        <div class="col-md-6">{{ form.status.label_tag }} {{ form.status }} {{ form.status.errors }}</div>
+        <div class="col-md-6">{{ form.ip_address.label_tag }} {{ form.ip_address }} {{ form.ip_address.errors }}</div>
+        <div class="col-md-6">{{ form.responsible_person.label_tag }} {{ form.responsible_person }} {{ form.responsible_person.errors }}</div>
+        <div class="col-md-6">{{ form.transfer_date.label_tag }} {{ form.transfer_date }} {{ form.transfer_date.errors }}</div>
+        <div class="col-md-6">{{ form.installation_date.label_tag }} {{ form.installation_date }} {{ form.installation_date.errors }}</div>
+        <div class="col-12">{{ form.notes.label_tag }} {{ form.notes }} {{ form.notes.errors }}</div>
+      </div>
 
-        <div class="mt-4 d-flex justify-content-between">
-          <a href="{% url 'warehouse_detail' warehouse_id %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left-circle"></i> Cancel
-          </a>
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-save"></i> Save
+      <hr class="my-5">
+
+      <!-- Device Properties -->
+      <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <h6 class="text-dark fw-bold"><i class="bi bi-gear text-primary me-1"></i>Device Properties</h6>
+          <button type="button" id="add-property" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-circle"></i> Add Property
           </button>
         </div>
-      </form>
-    </div>
+
+        {{ formset.management_form }}
+        <div class="table-responsive-sm">
+          <table class="table align-middle overflow-hidden" id="property-table">
+            <thead class="table-light text-uppercase small">
+              <tr>
+                <th class="bg-light">Property</th>
+                <th class="bg-light">Value</th>
+                <th class="bg-light text-center">Remove</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+              <tr class="property-row">
+                <td>{{ form.id }}{{ form.key }}</td>
+                <td>{{ form.value }}</td>
+                <td class="text-center">
+                  {% if form.instance.pk %}
+                    {{ form.DELETE }}
+                  {% else %}
+                    <button type="button" class="remove-row btn btn-sm btn-outline-danger rounded-circle" title="Remove">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Submit Buttons -->
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'warehouse_detail' warehouse_id %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left-circle"></i> Cancel
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save"></i> Save
+        </button>
+      </div>
+    </form>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function updateFormsetCount() {
+    const totalForms = document.querySelector(`input[name="properties-TOTAL_FORMS"]`);
+    if (totalForms) {
+      const rows = document.querySelectorAll(`#property-table .property-row`);
+      totalForms.value = rows.length;
+    }
+  }
+
+  function addPropertyRow() {
+    const tableBody = document.querySelector(`#property-table tbody`);
+    const totalForms = document.querySelector(`input[name="properties-TOTAL_FORMS"]`);
+    if (!tableBody || !totalForms) return;
+
+    const index = parseInt(totalForms.value);
+    const newRow = document.createElement("tr");
+    newRow.classList.add("property-row");
+
+    newRow.innerHTML = `
+      <td>
+        <input type="hidden" name="properties-${index}-id" id="id_properties-${index}-id" />
+        <input type="text" name="properties-${index}-key" class="form-control" maxlength="100" id="id_properties-${index}-key" />
+      </td>
+      <td>
+        <input type="text" name="properties-${index}-value" class="form-control" maxlength="255" id="id_properties-${index}-value" />
+      </td>
+      <td class="text-center">
+        <button type="button" class="remove-row btn btn-sm btn-outline-danger rounded-circle" title="Remove">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    `;
+
+    tableBody.appendChild(newRow);
+    totalForms.value = index + 1;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // إضافة صف
+    document.getElementById("add-property")?.addEventListener("click", addPropertyRow);
+
+    // حذف صف
+    document.addEventListener("click", function (e) {
+      const removeBtn = e.target.closest(".remove-row");
+      if (removeBtn) {
+        const row = removeBtn.closest("tr");
+        row.remove();
+        updateFormsetCount();
+      }
+    });
+  });
+</script>
+
 {% endblock %}
