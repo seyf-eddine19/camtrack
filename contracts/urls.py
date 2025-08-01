@@ -4,6 +4,9 @@ from . import views
 urlpatterns = [
     path('', views.DashboardView.as_view(), name='dashboard'),
     path('profile/', views.ProfileView.as_view(), name='profile'),
+
+    # تسجيل الدخول والخروج
+    path('login/', views.LoginView.as_view(), name='login'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
 
     # Contract
@@ -21,16 +24,16 @@ urlpatterns = [
     path('warehouses/<int:pk>/detail', views.WarehouseDetailView.as_view(), name='warehouse_detail'),
 
     # Devices
-    path('warehouses/<int:warehouse_id>/devices/add', views.DeviceCreateView.as_view(), name='device_add'),
-    path('warehouses/devices/<str:pk>/detail', views.DeviceDetailView.as_view(), name='device_detail'),
-    path('warehouses/devices/<str:pk>/edit', views.DeviceUpdateView.as_view(), name='device_edit'),
-    path('warehouses/devices/<str:pk>/delete', views.DeviceDeleteView.as_view(), name='device_delete'),
-    path('warehouses/devices/<str:pk>/status', views.update_device_status, name='device_update_status'),
+    path('warehouses/<int:warehouse_id>/devices/add', views.DeviceFormView.as_view(), name='device_add'),
+    path('warehouses/devices/<int:pk>/detail', views.DeviceDetailView.as_view(), name='device_detail'),
+    path('warehouses/devices/<int:pk>/edit', views.DeviceFormView.as_view(), name='device_edit'),
+    path('warehouses/devices/<int:pk>/delete', views.DeviceDeleteView.as_view(), name='device_delete'),
+    path('warehouses/devices/<int:pk>/status', views.update_device_status, name='update_device_status'),
     path("import/devices/", views.DeviceImportView.as_view(), name="import_devices"),
 
     # Maintenance 
     path('maintenance/', views.MaintenanceListView.as_view(), name='maintenance_list'),
-    path('maintenance/devices/<str:device_id>/add/', views.MaintenanceCreateView.as_view(), name='maintenance_add'),
+    path('maintenance/devices/<int:device_id>/add/', views.MaintenanceCreateView.as_view(), name='maintenance_add'),
     path('maintenance/<int:pk>/edit/', views.MaintenanceUpdateView.as_view(), name='maintenance_edit'),
     path('maintenance/<int:pk>/delete/', views.MaintenanceDeleteView.as_view(), name='maintenance_delete'),
 
