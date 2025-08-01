@@ -46,7 +46,7 @@
           <i class="bi bi-box-seam"></i>
         </div>
         <div class="text-muted small">In Warehouse</div>
-        <div class="fw-bold fs-5">{{ warehouse.count_in_warehouse }}</div>
+        <div class="fw-bold fs-5">{{ warehouse.count_available }}</div>
       </div>
     </div>
   
@@ -168,7 +168,6 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Serial</th>
             <th>Name</th>
             <th>Category</th>
             <th>Status</th>
@@ -183,9 +182,8 @@
         </thead>
         <tbody>
           {% for device in devices %}
-          <tr data-href="{% url 'device_detail' device.serial_number %}">
-            <td>{{ forloop.counter }}</td>
-            <td>{{ device.serial_number }}</td>
+          <tr data-href="{% url 'device_detail' device.pk %}">
+            <td>{{ device.pk }}</td>
             <td>{{ device.name }}</td>
             <td>{{ device.device_category.name }}</td>
             {% if device.status == 'available' %}
@@ -201,33 +199,57 @@
             <td>{{ device.responsible_person }}</td>
             <td>{{ device.count_maintenance_cards }}</td>
             <td>
-              <form method="post" action="{% url 'device_update_status' device.pk %}">
+              <form method="post" action="{% url 'update_device_status' device.pk %}" class="device-status-form">
                 {% csrf_token %}
-                  {% if device.status != 'available' %}
+              
+                {% if device.status != 'available' %}
                   <button name="status" value="available" class="btn btn-sm my-1 btn-primary">
                     <i class="bi bi-check-circle me-2"></i>Available
                   </button>
-                  {% endif %}
-                  {% if device.status != 'installed' %}
-                  <button name="status" value="installed" class="btn btn-sm my-1 btn-success">
+                {% endif %}
+              
+                {% if device.status != 'installed' %}
+                  <!-- زر تثبيت مستقل -->
+                  <button type="button" class="btn btn-sm my-1 btn-success install-btn">
                     <i class="bi bi-box-arrow-in-down me-2"></i>Installed
                   </button>
-                  {% endif %}
-                  {% if device.status != 'damaged' %}
+              
+                  <!-- قائمة اختيار المنطقة -->
+                  <div class="zone-select-container mt-2 d-none">
+                    <label>Select Zone</label>
+                    <select name="zone" class="form-select mt-1">
+                      {% for zone in zones %}
+                        <option value="{{ zone.pk }}">{{ zone.name }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-success mt-2">
+                      <i class="bi bi-check-circle"></i> Confirm Installation
+                    </button>
+                  </div>
+                {% endif %}
+              
+                {% if device.status != 'damaged' %}
                   <button name="status" value="damaged" class="btn btn-sm my-1 btn-danger">
                     <i class="bi bi-exclamation-triangle me-2"></i>Damaged
                   </button>
-                  {% endif %}
+                {% endif %}
               </form>
+              
             </td>
             <td>
-              <div class="d-flex gap-2 flex-wrap">
-                <a href="{% url 'device_detail' device.serial_number %}" class="btn btn-sm btn-icon btn-view" title="View">
+              <div class="d-flex gap-2 flex-row">
+                <a href="{% url 'device_detail' device.pk %}" class="btn btn-sm btn-icon btn-view" title="View">
                   <i class="bi bi-eye"></i>
                 </a>
-                <a href="{% url 'device_edit' device.serial_number %}" class="btn btn-sm btn-icon btn-edit" title="Edit">
+                <a href="{% url 'device_edit' device.pk %}" class="btn btn-sm btn-icon btn-edit" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </a>
+                <form method="post" action="{% url 'device_delete' device.pk %}" onsubmit="return confirm('Are you sure?')" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-icon btn-delete" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
               </div>
             </td>
           </tr>
@@ -246,4 +268,31 @@
     </a>
   </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".device-status-form").forEach(form => {
+      const installBtn = form.querySelector(".install-btn");
+      const zoneContainer = form.querySelector(".zone-select-container");
+
+      if (installBtn && zoneContainer) {
+        installBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+
+          // إخفاء الزر وإظهار القائمة فقط داخل هذا النموذج
+          installBtn.classList.add("d-none");
+          zoneContainer.classList.remove("d-none");
+
+          // تعيين قيمة الحالة يدويًا
+          const hiddenStatusInput = document.createElement("input");
+          hiddenStatusInput.type = "hidden";
+          hiddenStatusInput.name = "status";
+          hiddenStatusInput.value = "installed";
+          form.appendChild(hiddenStatusInput);
+        });
+      }
+    });
+  });
+</script>
 {% endblock %}
