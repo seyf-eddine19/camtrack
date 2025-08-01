@@ -106,7 +106,7 @@
           {% for card in maintenance_cards %}
           <tr>
             <td>{{ forloop.counter }}</td>
-            <td>{{ card.device.name }} ({{ card.device.serial_number }})</td>
+            <td>{{ card.device.name }}</td>
             <td>{{ card.device.zone.contract.name }}</td>
             <td>
               {% if card.device.status == 'available' %}
@@ -124,12 +124,12 @@
             <td>{{ card.repair_date|date:"d/m/Y" }}</td>
             <td>{{ card.technician }}</td>
             <td>
-              {% if card.device.serial_number %}
+              {% if card.device.pk %}
               <div class="d-flex gap-2 flex-wrap justify-content-center">
-                <a href="{% url 'device_detail' card.device.serial_number %}" class="btn btn-sm" title="عرض">
+                <a href="{% url 'device_detail' card.device.pk %}" class="btn btn-sm" title="عرض">
                   <i class="bi bi-eye"></i>
                 </a>
-                <a href="{% url 'maintenance_add' card.device.serial_number %}" class="btn btn-sm" title="إضافة صيانة">
+                <a href="{% url 'maintenance_add' card.device.pk %}" class="btn btn-sm" title="إضافة صيانة">
                   <i class="bi bi-plus-circle"></i>
                 </a>
               </div>
