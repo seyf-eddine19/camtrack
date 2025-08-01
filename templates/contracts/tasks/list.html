@@ -100,12 +100,13 @@
                 <ul class="dropdown-menu">
                   {% for key, label in task.TASK_STATUS_CHOICES %}
                     <li>
-                      <a class="dropdown-item" href="{% url 'task_change_status' task.id key %}">
+                      <a class="dropdown-item" href="{% url 'task_change_status' task.id key %}?contract={{ request.GET.contract }}&zone={{ request.GET.zone }}">
                         {{ label }}
                       </a>
                     </li>
                   {% endfor %}
                 </ul>
+                
               </div>
               <div class="d-flex gap-2">
                 <a href="{% url 'task_edit' task.id %}" class="btn btn-sm btn-outline-secondary">
