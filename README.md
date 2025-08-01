@@ -46,7 +46,7 @@
 
 - **Framework**: Django (Python)
 - **Database**: SQLite / PostgreSQL / MySQL (depending on deployment)
-- **Frontend**: Django Templates (can be extended with Bootstrap or custom CSS)
+- **Frontend**: Django Templates
 - **Authentication**: Built-in Django Auth
 
 ---
